@@ -10,8 +10,8 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="OpenSig Signatures"/>
   <Description DefaultValue="Compose-time preview/insert for OpenSig signatures."/>
-  <IconUrl DefaultValue="https://localhost:3000/taskpane/assets/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://localhost:3000/taskpane/assets/icon-80.png"/>
+  <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-80.png"/>
   <SupportUrl DefaultValue="https://example.org/support"/>
   <AppDomains>
     <AppDomain>https://localhost:3000</AppDomain>
@@ -55,6 +55,21 @@
                     <FunctionName>insertSignaturePlaceholder</FunctionName>
                   </Action>
                 </Control>
+                <Control xsi:type="Button" id="chooseVariantBtn">
+                  <Label resid="chooseVariantLabel"/>
+                  <Supertip>
+                    <Title resid="chooseVariantTipTitle"/>
+                    <Description resid="chooseVariantTipDesc"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="icon16"/>
+                    <bt:Image size="32" resid="icon32"/>
+                    <bt:Image size="80" resid="icon80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <SourceLocation resid="residTaskpaneUrl"/>
+                  </Action>
+                </Control>
               </Group>
             </OfficeTab>
           </ExtensionPoint>
@@ -69,14 +84,18 @@
       </bt:Images>
       <bt:Urls>
         <bt:Url id="residFunctionFileUrl" DefaultValue="https://localhost:3000/functions/functions.html"/>
+        <bt:Url id="residTaskpaneUrl" DefaultValue="https://localhost:3000/taskpane/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="groupLabel" DefaultValue="OpenSig"/>
         <bt:String id="insertLabel" DefaultValue="Insert signature"/>
         <bt:String id="insertTipTitle" DefaultValue="Insert OpenSig placeholder"/>
+        <bt:String id="chooseVariantLabel" DefaultValue="Choose variant"/>
+        <bt:String id="chooseVariantTipTitle" DefaultValue="Choose signature variant"/>
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="insertTipDesc" DefaultValue="Insert [[signature:default]] placeholder for server-side replacement."/>
+        <bt:String id="chooseVariantTipDesc" DefaultValue="Open panel to select and insert a specific signature variant (default, marketing, holiday, etc.)."/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
