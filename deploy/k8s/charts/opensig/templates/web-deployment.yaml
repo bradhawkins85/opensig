@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opensig-web
+spec:
+  replicas: {{ .Values.web.replicas }}
+  selector:
+    matchLabels: { app: opensig-web }
+  template:
+    metadata:
+      labels: { app: opensig-web }
+    spec:
+      containers:
+        - name: web
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repositoryWeb }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.web.servicePort }}
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: "http://opensig-api"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensig-web
+spec:
+  selector: { app: opensig-web }
+  ports:
+    - port: 80
+      targetPort: {{ .Values.web.servicePort }}

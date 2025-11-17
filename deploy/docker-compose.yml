@@ -1,0 +1,61 @@
+services:
+  api:
+    build:
+      context: ../server
+      target: api
+    environment:
+      - PORT=8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+
+  relay:
+    build:
+      context: ../server
+      target: relay
+    ports:
+      - "2525:2525"
+
+  web:
+    build:
+      context: ../web
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: opensig
+      POSTGRES_USER: opensig
+      POSTGRES_PASSWORD: opensig
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2023-12-14T18-51-57Z
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=opensig
+      - MINIO_ROOT_PASSWORD=opensigsecret
+    volumes:
+      - minio:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+volumes:
+  pgdata:
+  minio:

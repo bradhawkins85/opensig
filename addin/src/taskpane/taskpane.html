@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>OpenSig Task Pane</title>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+<body style="font-family:system-ui;padding:1rem">
+  <h3>OpenSig Add-in</h3>
+  <button onclick="insert()">Insert Signature Placeholder</button>
+  <script>
+    function insert() {
+      if (!Office.context || !Office.context.mailbox) return alert('Not in Outlook');
+      Office.context.mailbox.item.body.setAsync('[[signature:default]]', {coercionType: 'html'}, function (res) {
+        if (res.status === Office.AsyncResultStatus.Succeeded) {
+          console.log('Inserted placeholder');
+        } else {
+          console.error(res.error);
+          alert('Failed: ' + res.error.message);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

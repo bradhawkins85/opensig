@@ -1,0 +1,10 @@
+{
+  "name": "opensig-addin",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx http-server ./src -p 3000 -c-1",
+    "start": "npx http-server ./src -p 3000 -c-1"
+  },
+  "devDependencies": {}
+}

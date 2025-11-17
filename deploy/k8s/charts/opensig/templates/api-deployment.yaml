@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opensig-api
+spec:
+  replicas: {{ .Values.api.replicas }}
+  selector:
+    matchLabels: { app: opensig-api }
+  template:
+    metadata:
+      labels: { app: opensig-api }
+    spec:
+      containers:
+        - name: api
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repositoryApi }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.api.servicePort }}
+          env:
+            - name: PORT
+              value: "{{ .Values.api.servicePort }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensig-api
+spec:
+  selector: { app: opensig-api }
+  ports:
+    - port: 80
+      targetPort: {{ .Values.api.servicePort }}

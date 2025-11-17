@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.1"
+           xsi:type="MailApp">
+  <Id>ade058c2-da32-4d52-aca4-cfec712eea2c</Id>
+  <Version>0.1.0.0</Version>
+  <ProviderName>OpenSig</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="OpenSig Signatures"/>
+  <Description DefaultValue="Compose-time preview/insert for OpenSig signatures."/>
+  <IconUrl DefaultValue="https://localhost:3000/taskpane/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://localhost:3000/taskpane/assets/icon-80.png"/>
+  <SupportUrl DefaultValue="https://example.org/support"/>
+  <AppDomains>
+    <AppDomain>https://localhost:3000</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Mailbox"/>
+  </Hosts>
+  <Requirements>
+    <Sets DefaultMinVersion="1.10">
+      <Set Name="Mailbox"/>
+    </Sets>
+  </Requirements>
+  <Permissions>ReadWriteMailbox</Permissions>
+
+  <VersionOverrides xsi:type="mailappor:VersionOverrides">
+    <Requirements>
+      <bt:Sets DefaultMinVersion="1.10">
+        <bt:Set Name="Mailbox"/>
+      </bt:Sets>
+    </Requirements>
+    <Hosts>
+      <Host xsi:type="mailappor:Mailbox">
+        <DesktopFormFactor>
+          <FunctionFile resid="residFunctionFileUrl"/>
+          <ExtensionPoint xsi:type="MessageComposeCommandSurface">
+            <OfficeTab id="TabDefault">
+              <Group id="msgComposeGroup">
+                <Label resid="groupLabel"/>
+                <Control xsi:type="Button" id="insertSignatureBtn">
+                  <Label resid="insertLabel"/>
+                  <Supertip>
+                    <Title resid="insertTipTitle"/>
+                    <Description resid="insertTipDesc"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="icon16"/>
+                    <bt:Image size="32" resid="icon32"/>
+                    <bt:Image size="80" resid="icon80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>insertSignaturePlaceholder</FunctionName>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="icon16" DefaultValue="https://localhost:3000/assets/icon-16.png"/>
+        <bt:Image id="icon32" DefaultValue="https://localhost:3000/assets/icon-32.png"/>
+        <bt:Image id="icon80" DefaultValue="https://localhost:3000/assets/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="residFunctionFileUrl" DefaultValue="https://localhost:3000/functions/functions.html"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="groupLabel" DefaultValue="OpenSig"/>
+        <bt:String id="insertLabel" DefaultValue="Insert signature"/>
+        <bt:String id="insertTipTitle" DefaultValue="Insert OpenSig placeholder"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="insertTipDesc" DefaultValue="Insert [[signature:default]] placeholder for server-side replacement."/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>
