@@ -10,8 +10,8 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="OpenSig Signatures"/>
   <Description DefaultValue="Compose-time preview/insert for OpenSig signatures."/>
-  <IconUrl DefaultValue="https://localhost:3000/taskpane/assets/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://localhost:3000/taskpane/assets/icon-80.png"/>
+  <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-80.png"/>
   <SupportUrl DefaultValue="https://example.org/support"/>
   <AppDomains>
     <AppDomain>https://localhost:3000</AppDomain>
