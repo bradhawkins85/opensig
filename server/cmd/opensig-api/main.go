@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/your-org/opensig/server/internal/auth"
 	"github.com/your-org/opensig/server/internal/handlers"
 	"github.com/your-org/opensig/server/internal/middleware"
 	"github.com/your-org/opensig/server/internal/models"
@@ -55,11 +56,34 @@ func main() {
 	tenantStore := store.NewTenantStore()
 	tenantHandler := handlers.NewTenantHandler(tenantStore)
 
+	// Initialize auth service
+	authConfig := auth.NewConfigFromEnv()
+	tokenStore := auth.NewInMemoryTokenStore()
+	authService, err := auth.NewService(authConfig, tokenStore)
+	if err != nil {
+		log.Printf("Warning: Auth service initialization failed: %v", err)
+		log.Printf("Authentication endpoints will not be available")
+		log.Printf("Set AZURE_CLIENT_ID and optionally AZURE_CLIENT_SECRET to enable auth")
+	}
+	var authHandler *handlers.AuthHandler
+	if authService != nil {
+		authHandler = handlers.NewAuthHandler(authService)
+	}
+
 	mux := http.NewServeMux()
 
 	// Public endpoints
 	mux.HandleFunc("/healthz", healthz)
 	mux.HandleFunc("/v1/preview", preview)
+
+	// Auth endpoints (if auth service is available)
+	if authHandler != nil {
+		mux.HandleFunc("/auth/login", authHandler.Login)
+		mux.HandleFunc("/auth/callback", authHandler.Callback)
+		mux.HandleFunc("/auth/status", authHandler.Status)
+		mux.HandleFunc("/auth/logout", authHandler.Logout)
+		log.Printf("Microsoft Graph auth endpoints enabled")
+	}
 
 	// Tenant CRUD endpoints - require Org Admin role
 	mux.Handle("/v1/tenants", middleware.MockAuthMiddleware(nil)(
