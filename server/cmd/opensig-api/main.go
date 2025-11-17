@@ -13,6 +13,7 @@ import (
 	"github.com/your-org/opensig/server/internal/handlers"
 	"github.com/your-org/opensig/server/internal/middleware"
 	"github.com/your-org/opensig/server/internal/models"
+	"github.com/your-org/opensig/server/internal/renderer"
 	"github.com/your-org/opensig/server/internal/store"
 )
 
@@ -27,14 +28,35 @@ func healthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func preview(w http.ResponseWriter, r *http.Request) {
-	// Minimal stub: returns a rendered placeholder with fake user data
+	// Sample templates with placeholders and conditionals
+	htmlTemplate := `<div style="font-family:Segoe UI,Arial,sans-serif">
+<strong>{{name}}</strong><br>
+{{title}}{{#if department}}, {{department}}{{/if}}<br>
+{{#if logo}}<img src="{{logo}}" alt="Company Logo">{{/if}}
+</div>`
+	
+	textTemplate := `{{name}}
+{{title}}{{#if department}}, {{department}}{{/if}}`
+	
+	// Sample user data
+	data := map[string]string{
+		"name":       "Jane Doe",
+		"title":      "Senior Engineer",
+		"department": "Engineering",
+		"logo":       "https://via.placeholder.com/120x40",
+	}
+	
+	// Render templates with safe HTML escaping
+	htmlRendered := renderer.RenderSafe(htmlTemplate, data)
+	textRendered := renderer.Render(textTemplate, data)
+	
 	type Resp struct {
 		HTML string `json:"html"`
 		Text string `json:"text"`
 	}
 	resp := Resp{
-		HTML: `<div style="font-family:Segoe UI,Arial,sans-serif"><strong>Jane Doe</strong><br>Senior Engineer<br><img src="https://via.placeholder.com/120x40" alt="Logo"></div>`,
-		Text: "Jane Doe\nSenior Engineer",
+		HTML: htmlRendered,
+		Text: textRendered,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(resp)
