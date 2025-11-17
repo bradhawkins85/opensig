@@ -14,6 +14,9 @@ namespace OpenSig.Agent.Models
 
         [JsonPropertyName("user_id")]
         public string UserId { get; set; } = string.Empty;
+
+        [JsonPropertyName("set_default_signatures")]
+        public bool SetDefaultSignatures { get; set; } = false;
     }
 
     public class RenderedTemplate

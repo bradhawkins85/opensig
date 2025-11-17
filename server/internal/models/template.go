@@ -17,9 +17,10 @@ type Template struct {
 
 // AgentTemplateResponse represents the response for agent template requests
 type AgentTemplateResponse struct {
-	Templates []RenderedTemplate `json:"templates"`
-	UserEmail string             `json:"user_email"`
-	UserID    string             `json:"user_id"`
+	Templates             []RenderedTemplate `json:"templates"`
+	UserEmail             string             `json:"user_email"`
+	UserID                string             `json:"user_id"`
+	SetDefaultSignatures  bool               `json:"set_default_signatures"`
 }
 
 // RenderedTemplate represents a template rendered with user-specific data

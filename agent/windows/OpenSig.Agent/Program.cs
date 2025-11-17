@@ -41,7 +41,6 @@ namespace OpenSig.Agent
                 writer.WriteSignatures(response);
 
                 Logger.Log("Signature sync completed successfully");
-                Logger.Log("NOTE: Setting Outlook default signatures requires additional registry configuration");
 
                 return 0;
             }
