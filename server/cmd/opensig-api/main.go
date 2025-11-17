@@ -77,6 +77,8 @@ func main() {
 	// Initialize stores
 	tenantStore := store.NewTenantStore()
 	tenantHandler := handlers.NewTenantHandler(tenantStore)
+	templateStore := store.NewTemplateStore()
+	agentHandler := handlers.NewAgentHandler(templateStore)
 
 	// Initialize auth service
 	authConfig := auth.NewConfigFromEnv()
@@ -97,6 +99,9 @@ func main() {
 	// Public endpoints
 	mux.HandleFunc("/healthz", healthz)
 	mux.HandleFunc("/v1/preview", preview)
+	
+	// Agent endpoints
+	mux.HandleFunc("/v1/agent/templates", agentHandler.GetTemplates)
 
 	// Auth endpoints (if auth service is available)
 	if authHandler != nil {

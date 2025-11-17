@@ -1,1 +1,14 @@
 .DS_Store
+
+# .NET build artifacts
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+*.user
+*.cache
+
+# Dependency directories
+node_modules/
+vendor/

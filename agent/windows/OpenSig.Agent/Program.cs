@@ -1,39 +1,54 @@
 using System;
-using System.IO;
-using System.Text;
+using System.Threading.Tasks;
+using OpenSig.Agent.Services;
 
 namespace OpenSig.Agent
 {
     internal class Program
     {
-        static int Main(string[] args)
+        static async Task<int> Main(string[] args)
         {
+            Logger.Log("OpenSig Windows Agent starting...");
+
             try
             {
-                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                string sigDir = Path.Combine(appData, "Microsoft", "Signatures");
-                Directory.CreateDirectory(sigDir);
+                // Get API URL from environment variable or use default
+                string apiUrl = Environment.GetEnvironmentVariable("OPENSIG_API_URL") ?? "http://localhost:8080";
+                
+                // Get user info from environment or use defaults for testing
+                string? userEmail = Environment.GetEnvironmentVariable("OPENSIG_USER_EMAIL");
+                string? userId = Environment.GetEnvironmentVariable("OPENSIG_USER_ID");
+                string? tenantId = Environment.GetEnvironmentVariable("OPENSIG_TENANT_ID");
 
-                // Minimal example signature
-                string name = "OpenSigSignature";
-                string htmlPath = Path.Combine(sigDir, $"{name}.htm");
-                string rtfPath  = Path.Combine(sigDir, $"{name}.rtf");
-                string txtPath  = Path.Combine(sigDir, $"{name}.txt");
+                Logger.Log($"Connecting to API: {apiUrl}");
 
-                File.WriteAllText(htmlPath,
-                    "<div style='font-family:Segoe UI,Arial,sans-serif'><b>OpenSig (preview)</b><br/>Local Windows Agent</div>",
-                    Encoding.UTF8);
-                File.WriteAllText(rtfPath, @"{\\rtf1\\ansi OpenSig (preview) - Local Windows Agent}");
-                File.WriteAllText(txtPath, "OpenSig (preview) - Local Windows Agent");
+                // Create API client
+                var apiClient = new ApiClient(apiUrl);
 
-                Console.WriteLine($"Wrote signature to: {sigDir}");
-                Console.WriteLine("NOTE: Setting Outlook default signatures is not implemented in this stub.");
+                // Fetch templates from API
+                var response = await apiClient.GetTemplatesAsync(userEmail, userId, tenantId);
+
+                if (response == null || response.Templates.Count == 0)
+                {
+                    Logger.LogWarning("No templates received from API");
+                    return 1;
+                }
+
+                Logger.Log($"Authenticated as: {response.UserEmail}");
+
+                // Write signatures to disk
+                var writer = new SignatureWriter();
+                writer.WriteSignatures(response);
+
+                Logger.Log("Signature sync completed successfully");
+                Logger.Log("NOTE: Setting Outlook default signatures requires additional registry configuration");
 
                 return 0;
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine(ex.ToString());
+                Logger.LogError($"Fatal error: {ex.Message}");
+                Logger.LogError(ex.ToString());
                 return 1;
             }
         }
