@@ -4,21 +4,129 @@
   <meta charset="utf-8"/>
   <title>OpenSig Task Pane</title>
   <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 1rem;
+      margin: 0;
+    }
+    h3 {
+      margin-top: 0;
+      color: #333;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: #555;
+    }
+    select {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      background-color: white;
+    }
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      background-color: #0078d4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #106ebe;
+    }
+    button:active {
+      background-color: #005a9e;
+    }
+    .status {
+      margin-top: 1rem;
+      padding: 0.5rem;
+      border-radius: 4px;
+      font-size: 13px;
+      display: none;
+    }
+    .status.success {
+      background-color: #dff6dd;
+      color: #0f5132;
+      border: 1px solid #badbcc;
+    }
+    .status.error {
+      background-color: #f8d7da;
+      color: #842029;
+      border: 1px solid #f5c2c7;
+    }
+  </style>
 </head>
-<body style="font-family:system-ui;padding:1rem">
-  <h3>OpenSig Add-in</h3>
-  <button onclick="insert()">Insert Signature Placeholder</button>
+<body>
+  <h3>OpenSig Signatures</h3>
+  
+  <div class="form-group">
+    <label for="variantSelect">Select Signature Variant:</label>
+    <select id="variantSelect">
+      <option value="default">Default</option>
+      <option value="marketing">Marketing</option>
+      <option value="holiday">Holiday</option>
+      <option value="professional">Professional</option>
+      <option value="minimal">Minimal</option>
+    </select>
+  </div>
+  
+  <button onclick="insertVariant()">Insert Signature Placeholder</button>
+  
+  <div id="status" class="status"></div>
+
   <script>
-    function insert() {
-      if (!Office.context || !Office.context.mailbox) return alert('Not in Outlook');
-      Office.context.mailbox.item.body.setAsync('[[signature:default]]', {coercionType: 'html'}, function (res) {
-        if (res.status === Office.AsyncResultStatus.Succeeded) {
-          console.log('Inserted placeholder');
-        } else {
-          console.error(res.error);
-          alert('Failed: ' + res.error.message);
+    Office.onReady(function() {
+      console.log('Office is ready');
+    });
+
+    function insertVariant() {
+      if (!Office.context || !Office.context.mailbox) {
+        showStatus('Not running in Outlook context', 'error');
+        return;
+      }
+
+      const variantSelect = document.getElementById('variantSelect');
+      const variant = variantSelect.value;
+      const placeholder = '[[signature:' + variant + ']]';
+
+      Office.context.mailbox.item.body.setSelectedDataAsync(
+        placeholder,
+        { coercionType: Office.CoercionType.Html },
+        function(result) {
+          if (result.status === Office.AsyncResultStatus.Succeeded) {
+            showStatus('Inserted placeholder: ' + placeholder, 'success');
+          } else {
+            console.error(result.error);
+            showStatus('Failed to insert: ' + result.error.message, 'error');
+          }
         }
-      });
+      );
+    }
+
+    function showStatus(message, type) {
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = message;
+      statusEl.className = 'status ' + type;
+      statusEl.style.display = 'block';
+      
+      // Auto-hide success messages after 3 seconds
+      if (type === 'success') {
+        setTimeout(function() {
+          statusEl.style.display = 'none';
+        }, 3000);
+      }
     }
   </script>
 </body>
