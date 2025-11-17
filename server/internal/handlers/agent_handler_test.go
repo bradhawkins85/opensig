@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/your-org/opensig/server/internal/models"
@@ -76,6 +77,10 @@ func TestAgentHandler_GetTemplates(t *testing.T) {
 				if resp.UserID != "custom-123" {
 					t.Errorf("Expected user ID 'custom-123', got %s", resp.UserID)
 				}
+				// Verify SetDefaultSignatures field is present (default false when env var not set)
+				if resp.SetDefaultSignatures != false {
+					t.Errorf("Expected SetDefaultSignatures to be false (default), got %v", resp.SetDefaultSignatures)
+				}
 			},
 		},
 		{
@@ -125,6 +130,45 @@ func TestAgentHandler_GetTemplates_MethodNotAllowed(t *testing.T) {
 
 	if rr.Code != http.StatusMethodNotAllowed {
 		t.Errorf("Expected status %d, got %d", http.StatusMethodNotAllowed, rr.Code)
+	}
+}
+
+func TestAgentHandler_GetTemplates_SetDefaultSignaturesEnabled(t *testing.T) {
+	// Set the environment variable
+	os.Setenv("OPENSIG_SET_DEFAULT_SIGNATURES", "true")
+	defer os.Unsetenv("OPENSIG_SET_DEFAULT_SIGNATURES")
+
+	mockTemplate := &models.Template{
+		ID:          "test-123",
+		TenantID:    "default",
+		Name:        "Test Template",
+		HTMLContent: "<div>{{name}}</div>",
+		RTFContent:  "{\\rtf1\\ansi {{name}}}",
+		TextContent: "{{name}}",
+		Active:      true,
+	}
+
+	store := &mockTemplateStore{
+		templates: []*models.Template{mockTemplate},
+	}
+	handler := NewAgentHandler(store)
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/agent/templates", nil)
+	rr := httptest.NewRecorder()
+
+	handler.GetTemplates(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, rr.Code)
+	}
+
+	var response models.AgentTemplateResponse
+	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	if !response.SetDefaultSignatures {
+		t.Errorf("Expected SetDefaultSignatures to be true when env var is set, got false")
 	}
 }
 

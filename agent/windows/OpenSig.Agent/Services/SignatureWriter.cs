@@ -33,6 +33,39 @@ namespace OpenSig.Agent.Services
             }
 
             Logger.Log($"Successfully wrote {response.Templates.Count} signature(s)");
+
+            // Set default signatures in Outlook if enabled
+            if (response.SetDefaultSignatures && response.Templates.Count > 0)
+            {
+                Logger.Log("Feature flag 'set_default_signatures' is enabled. Configuring Outlook defaults...");
+                
+                var registryManager = new OutlookRegistryManager();
+                
+                // Check if roaming signatures are enabled
+                if (registryManager.IsRoamingSignaturesEnabled())
+                {
+                    Logger.LogWarning("Roaming signatures are enabled. Skipping default signature configuration to avoid conflicts.");
+                }
+                else
+                {
+                    // Use the first template as the default signature
+                    var firstTemplate = response.Templates[0];
+                    string safeName = SanitizeFilename(firstTemplate.Name);
+                    
+                    if (registryManager.SetDefaultSignatures(safeName))
+                    {
+                        Logger.Log($"Successfully configured '{safeName}' as the default signature for new emails and replies");
+                    }
+                    else
+                    {
+                        Logger.LogWarning("Could not configure default Outlook signatures. See previous warnings for details.");
+                    }
+                }
+            }
+            else if (response.SetDefaultSignatures && response.Templates.Count == 0)
+            {
+                Logger.LogWarning("Cannot set default signatures: No templates available");
+            }
         }
 
         private void WriteSignature(RenderedTemplate template)

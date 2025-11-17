@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/your-org/opensig/server/internal/models"
 	"github.com/your-org/opensig/server/internal/renderer"
@@ -83,13 +85,20 @@ func (h *AgentHandler) GetTemplates(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	response := models.AgentTemplateResponse{
-		Templates: renderedTemplates,
-		UserEmail: userEmail,
-		UserID:    userID,
+	// Check if the feature flag to set default signatures is enabled
+	setDefaultSignatures := false
+	if envValue := os.Getenv("OPENSIG_SET_DEFAULT_SIGNATURES"); envValue != "" {
+		setDefaultSignatures = strings.ToLower(envValue) == "true" || envValue == "1"
 	}
 
-	log.Printf("Serving %d templates to agent for user %s", len(renderedTemplates), userEmail)
+	response := models.AgentTemplateResponse{
+		Templates:            renderedTemplates,
+		UserEmail:            userEmail,
+		UserID:               userID,
+		SetDefaultSignatures: setDefaultSignatures,
+	}
+
+	log.Printf("Serving %d templates to agent for user %s (set_default_signatures=%v)", len(renderedTemplates), userEmail, setDefaultSignatures)
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(response)
