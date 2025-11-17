@@ -34,6 +34,12 @@
     </Requirements>
     <Hosts>
       <Host xsi:type="mailappor:Mailbox">
+        <!-- Runtimes for LaunchEvent support -->
+        <Runtimes>
+          <Runtime resid="residFunctionFileUrl">
+            <Override type="javascript" resid="residFunctionFileUrl"/>
+          </Runtime>
+        </Runtimes>
         <DesktopFormFactor>
           <FunctionFile resid="residFunctionFileUrl"/>
           <ExtensionPoint xsi:type="MessageComposeCommandSurface">
@@ -72,6 +78,13 @@
                 </Control>
               </Group>
             </OfficeTab>
+          </ExtensionPoint>
+          <!-- LaunchEvent extension point for auto-insert on new message compose -->
+          <ExtensionPoint xsi:type="LaunchEvent">
+            <LaunchEvents>
+              <LaunchEvent Type="OnNewMessageCompose" FunctionName="onNewMessageCompose"/>
+            </LaunchEvents>
+            <SourceLocation resid="residFunctionFileUrl"/>
           </ExtensionPoint>
         </DesktopFormFactor>
       </Host>
