@@ -78,6 +78,9 @@ func main() {
 	tenantStore := store.NewTenantStore()
 	tenantHandler := handlers.NewTenantHandler(tenantStore)
 	templateStore := store.NewTemplateStore()
+	auditStore := store.NewAuditStore()
+	templateHandler := handlers.NewTemplateHandler(templateStore, auditStore)
+	auditHandler := handlers.NewAuditHandler(auditStore)
 	agentHandler := handlers.NewAgentHandler(templateStore)
 	scheduleStore := store.NewScheduleStore()
 	scheduleHandler := handlers.NewScheduleHandler(scheduleStore)
@@ -240,6 +243,106 @@ func main() {
 		),
 	))
 
+	// Template CRUD endpoints - require Signature Admin role for CRUD, Approver for approve/reject
+	mux.Handle("/v1/templates", middleware.MockAuthMiddleware(nil)(
+		middleware.RequireRole(models.RoleSignatureAdmin)(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodPost {
+					templateHandler.CreateTemplate(w, r)
+				} else if r.Method == http.MethodGet {
+					templateHandler.ListTemplates(w, r)
+				} else {
+					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				}
+			}),
+		),
+	))
+
+	mux.Handle("/v1/templates/", middleware.MockAuthMiddleware(nil)(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !strings.HasPrefix(r.URL.Path, "/v1/templates/") {
+				http.NotFound(w, r)
+				return
+			}
+			
+			user := r.Context().Value(middleware.UserContextKey).(*models.User)
+			
+			// Approval actions require Approver role
+			if strings.HasSuffix(r.URL.Path, "/approve") && r.Method == http.MethodPost {
+				if user.Role != models.RoleApprover && user.Role != models.RoleOrgAdmin {
+					http.Error(w, "forbidden: insufficient permissions", http.StatusForbidden)
+					return
+				}
+				templateHandler.ApproveTemplate(w, r)
+				return
+			}
+			if strings.HasSuffix(r.URL.Path, "/reject") && r.Method == http.MethodPost {
+				if user.Role != models.RoleApprover && user.Role != models.RoleOrgAdmin {
+					http.Error(w, "forbidden: insufficient permissions", http.StatusForbidden)
+					return
+				}
+				templateHandler.RejectTemplate(w, r)
+				return
+			}
+			
+			// All other template actions require Signature Admin role
+			if user.Role != models.RoleSignatureAdmin && user.Role != models.RoleOrgAdmin {
+				http.Error(w, "forbidden: insufficient permissions", http.StatusForbidden)
+				return
+			}
+			
+			// Handle workflow actions
+			if strings.HasSuffix(r.URL.Path, "/submit") && r.Method == http.MethodPost {
+				templateHandler.SubmitForReview(w, r)
+				return
+			}
+			if strings.HasSuffix(r.URL.Path, "/publish") && r.Method == http.MethodPost {
+				templateHandler.PublishTemplate(w, r)
+				return
+			}
+			if strings.HasSuffix(r.URL.Path, "/unpublish") && r.Method == http.MethodPost {
+				templateHandler.UnpublishTemplate(w, r)
+				return
+			}
+			
+			switch r.Method {
+			case http.MethodGet:
+				templateHandler.GetTemplate(w, r)
+			case http.MethodPut:
+				templateHandler.UpdateTemplate(w, r)
+			case http.MethodDelete:
+				templateHandler.DeleteTemplate(w, r)
+			default:
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			}
+		}),
+	))
+
+	// Audit log endpoints - require Auditor role (read-only)
+	mux.Handle("/v1/audit", middleware.MockAuthMiddleware(nil)(
+		middleware.RequireRole(models.RoleAuditor)(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodGet {
+					auditHandler.ListAuditEntries(w, r)
+				} else {
+					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				}
+			}),
+		),
+	))
+
+	mux.Handle("/v1/audit/stats", middleware.MockAuthMiddleware(nil)(
+		middleware.RequireRole(models.RoleAuditor)(
+			http.HandlerFunc(auditHandler.GetAuditStats),
+		),
+	))
+
+	mux.Handle("/v1/audit/resource/", middleware.MockAuthMiddleware(nil)(
+		middleware.RequireRole(models.RoleAuditor)(
+			http.HandlerFunc(auditHandler.GetAuditEntriesForResource),
+		),
+	))
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -248,6 +351,7 @@ func main() {
 	log.Printf("OpenSig API listening on %s", addr)
 	log.Printf("RBAC roles: org_admin, signature_admin, approver, auditor")
 	log.Printf("Use X-User-ID and X-User-Role headers for testing RBAC")
-	log.Printf("New endpoints: /v1/rules, /v1/schedules, /v1/rules/evaluate")
+	log.Printf("Endpoints: /v1/rules, /v1/schedules, /v1/templates (with approval workflow)")
+	log.Printf("Audit endpoints: /v1/audit, /v1/audit/stats, /v1/audit/resource/{type}/{id}")
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
