@@ -20,3 +20,12 @@ next-env.d.ts
 
 # Package lock files
 package-lock.json
+
+# Go build artifacts
+server/opensig-api
+server/opensig-relay
+*.test
+*.out
+
+# Logs
+*.log
