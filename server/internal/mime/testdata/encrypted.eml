@@ -1,0 +1,13 @@
+From: sender@example.com
+To: recipient@example.com
+Subject: S/MIME encrypted message
+Content-Type: application/pkcs7-mime; smime-type=enveloped-data; name="smime.p7m"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7m"
+
+MIAGCSqGSIb3DQEHA6CAMIACAQAxggFxMIIBbQIBADBlMFUxCzAJBgNVBAYTAlVT
+MRMwEQYDVQQKDApFeGFtcGxlIENBMRUwEwYDVQQLDAxFeGFtcGxlIFVuaXQxGjAY
+BgNVBAMMEWV4YW1wbGUuY29tIENBIDECDAC+JKwTTb7LfzMpbjANBgkqhkiG9w0B
+AQEFAASCAQBdGpkq2FwcxuN5LvPjLBMc
+
+This content is encrypted and should not be modified.

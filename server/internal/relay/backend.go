@@ -8,18 +8,34 @@ import (
 
 	"github.com/emersion/go-smtp"
 	"github.com/google/uuid"
+	"github.com/your-org/opensig/server/internal/mime"
 	"github.com/your-org/opensig/server/internal/store"
 )
 
 // Backend implements smtp.Backend interface
 type Backend struct {
 	tenantStore *store.TenantStore
+	mimeWalker  *mime.Walker
 }
 
 // NewBackend creates a new SMTP backend
 func NewBackend(tenantStore *store.TenantStore) *Backend {
+	// Create a signature renderer function
+	signatureRenderer := func(name string) (html string, text string, err error) {
+		// For now, return a simple default signature
+		// TODO: In M4, integrate with template store and rules engine
+		html = `<div class="signature">
+<p>Best regards,<br>
+<strong>Default Signature</strong></p>
+</div>`
+		text = `Best regards,
+Default Signature`
+		return html, text, nil
+	}
+	
 	return &Backend{
 		tenantStore: tenantStore,
+		mimeWalker:  mime.NewWalker(signatureRenderer),
 	}
 }
 
@@ -97,7 +113,7 @@ func (s *Session) Rcpt(to string, opts *smtp.RcptOptions) error {
 
 // Data implements the DATA command
 func (s *Session) Data(r io.Reader) error {
-	// Read the message (but don't process it yet - no-op pass-through)
+	// Read the message
 	data, err := io.ReadAll(r)
 	if err != nil {
 		log.Printf("[%s] Error reading message data: %v", s.sessionID, err)
@@ -107,11 +123,26 @@ func (s *Session) Data(r io.Reader) error {
 	messageSize := len(data)
 	duration := time.Since(s.startTime)
 	
-	log.Printf("[%s] Message received: from=<%s> to=%v size=%d bytes duration=%v", 
-		s.sessionID, s.from, s.to, messageSize, duration)
+	// Process the message with MIME walker
+	modified, wasModified, err := s.backend.mimeWalker.ProcessMessage(data)
+	if err != nil {
+		log.Printf("[%s] Error processing message: %v", s.sessionID, err)
+		// Continue with original message on error
+		modified = data
+		wasModified = false
+	}
 	
-	// TODO: In M3 full implementation, parse MIME and replace placeholders
-	// For now, this is a no-op pass-through that just logs
+	modificationStatus := "unmodified"
+	if wasModified {
+		modificationStatus = "modified (placeholders replaced)"
+	}
+	
+	log.Printf("[%s] Message received: from=<%s> to=%v size=%d bytes duration=%v status=%s", 
+		s.sessionID, s.from, s.to, messageSize, duration, modificationStatus)
+	
+	// TODO: In M4, forward the modified message to the next hop
+	// For now, we just process and log
+	_ = modified
 	
 	return nil
 }
@@ -185,8 +216,25 @@ func (s *AnonymousSession) Data(r io.Reader) error {
 	messageSize := len(data)
 	duration := time.Since(s.startTime)
 	
-	log.Printf("[%s] Message received (anonymous): from=<%s> to=%v size=%d bytes duration=%v", 
-		s.sessionID, s.from, s.to, messageSize, duration)
+	// Process the message with MIME walker
+	modified, wasModified, err := s.backend.mimeWalker.ProcessMessage(data)
+	if err != nil {
+		log.Printf("[%s] Error processing message: %v", s.sessionID, err)
+		// Continue with original message on error
+		modified = data
+		wasModified = false
+	}
+	
+	modificationStatus := "unmodified"
+	if wasModified {
+		modificationStatus = "modified (placeholders replaced)"
+	}
+	
+	log.Printf("[%s] Message received (anonymous): from=<%s> to=%v size=%d bytes duration=%v status=%s", 
+		s.sessionID, s.from, s.to, messageSize, duration, modificationStatus)
+	
+	// TODO: In M4, forward the modified message to the next hop
+	_ = modified
 	
 	return nil
 }

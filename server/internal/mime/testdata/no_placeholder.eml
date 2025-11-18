@@ -1,0 +1,11 @@
+From: sender@example.com
+To: recipient@example.com
+Subject: Message without placeholders
+Content-Type: text/plain; charset=utf-8
+
+Hello,
+
+This is a message without any signature placeholders.
+
+Best regards,
+John Doe

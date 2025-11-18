@@ -1,0 +1,10 @@
+From: sender@example.com
+To: recipient@example.com
+Subject: Simple text message
+Content-Type: text/plain; charset=utf-8
+
+Hello,
+
+This is a simple text message.
+
+[[signature:default]]
