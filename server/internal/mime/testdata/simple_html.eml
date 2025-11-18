@@ -1,0 +1,12 @@
+From: sender@example.com
+To: recipient@example.com
+Subject: Simple HTML message
+Content-Type: text/html; charset=utf-8
+
+<html>
+<body>
+<p>Hello,</p>
+<p>This is a simple HTML message.</p>
+<p>[[signature:marketing]]</p>
+</body>
+</html>

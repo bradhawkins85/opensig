@@ -1,0 +1,26 @@
+From: sender@example.com
+To: recipient@example.com
+Subject: Multipart message
+Content-Type: multipart/alternative; boundary="boundary123"
+
+--boundary123
+Content-Type: text/plain; charset=utf-8
+
+Hello,
+
+This is the text part.
+
+[[signature:default]]
+
+--boundary123
+Content-Type: text/html; charset=utf-8
+
+<html>
+<body>
+<p>Hello,</p>
+<p>This is the HTML part.</p>
+<p>[[signature:default]]</p>
+</body>
+</html>
+
+--boundary123--

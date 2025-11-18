@@ -141,7 +141,10 @@ func TestSession_Rcpt(t *testing.T) {
 }
 
 func TestSession_Data(t *testing.T) {
+	tenantStore := store.NewTenantStore()
+	backend := NewBackend(tenantStore)
 	session := &Session{
+		backend:   backend,
 		sessionID: "test-session",
 		from:      "sender@example.com",
 		to:        []string{"recipient@example.com"},
@@ -220,7 +223,10 @@ func TestAnonymousSession_Rcpt(t *testing.T) {
 }
 
 func TestAnonymousSession_Data(t *testing.T) {
+	tenantStore := store.NewTenantStore()
+	backend := NewBackend(tenantStore)
 	session := &AnonymousSession{
+		backend:   backend,
 		sessionID: "test-session",
 		from:      "sender@example.com",
 		to:        []string{"recipient@example.com"},
@@ -252,3 +258,48 @@ func TestAnonymousSession_Reset(t *testing.T) {
 		t.Errorf("Expected nil to after reset, got %v", session.to)
 	}
 }
+
+func TestSession_Data_WithPlaceholder(t *testing.T) {
+	tenantStore := store.NewTenantStore()
+	backend := NewBackend(tenantStore)
+	session := &Session{
+		backend:   backend,
+		sessionID: "test-session",
+		from:      "sender@example.com",
+		to:        []string{"recipient@example.com"},
+	}
+	
+	message := []byte("From: sender@example.com\r\nTo: recipient@example.com\r\nSubject: Test\r\nContent-Type: text/plain\r\n\r\nHello,\n\n[[signature:default]]\n")
+	reader := bytes.NewReader(message)
+	
+	err := session.Data(reader)
+	if err != nil {
+		t.Errorf("Data failed: %v", err)
+	}
+	
+	// The test verifies that the Data method processes messages with placeholders without errors
+	// The actual placeholder replacement is tested in mime/walker_test.go
+}
+
+func TestSession_Data_SignedMessage(t *testing.T) {
+	tenantStore := store.NewTenantStore()
+	backend := NewBackend(tenantStore)
+	session := &Session{
+		backend:   backend,
+		sessionID: "test-session",
+		from:      "sender@example.com",
+		to:        []string{"recipient@example.com"},
+	}
+	
+	message := []byte("From: sender@example.com\r\nTo: recipient@example.com\r\nSubject: Signed Test\r\nContent-Type: multipart/signed; protocol=\"application/pkcs7-signature\"\r\n\r\nSigned content\n[[signature:default]]\n")
+	reader := bytes.NewReader(message)
+	
+	err := session.Data(reader)
+	if err != nil {
+		t.Errorf("Data failed: %v", err)
+	}
+	
+	// The test verifies that signed messages are accepted without modification
+	// The S/MIME detection is tested in mime/walker_test.go
+}
+

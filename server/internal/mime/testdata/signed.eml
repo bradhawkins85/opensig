@@ -1,0 +1,21 @@
+From: sender@example.com
+To: recipient@example.com
+Subject: S/MIME signed message
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg="sha-256"; boundary="boundary456"
+
+--boundary456
+Content-Type: text/plain; charset=utf-8
+
+This is a signed message.
+
+[[signature:default]]
+
+--boundary456
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExDzANBglghkgBZQMEAgEFADCABgkqhkiG9w0B
+BwGggCSABIH4VGhpcyBpcyBhIHNpZ25lZCBtZXNzYWdlLgoAAAAAAAAA
+
+--boundary456--
