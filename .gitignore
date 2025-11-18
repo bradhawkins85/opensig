@@ -12,3 +12,11 @@ obj/
 # Dependency directories
 node_modules/
 vendor/
+
+# Next.js build artifacts
+.next/
+out/
+next-env.d.ts
+
+# Package lock files
+package-lock.json

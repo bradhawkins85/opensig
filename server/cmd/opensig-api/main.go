@@ -79,6 +79,10 @@ func main() {
 	tenantHandler := handlers.NewTenantHandler(tenantStore)
 	templateStore := store.NewTemplateStore()
 	agentHandler := handlers.NewAgentHandler(templateStore)
+	scheduleStore := store.NewScheduleStore()
+	scheduleHandler := handlers.NewScheduleHandler(scheduleStore)
+	ruleStore := store.NewRuleStore(scheduleStore)
+	ruleHandler := handlers.NewRuleHandler(ruleStore)
 
 	// Initialize auth service
 	authConfig := auth.NewConfigFromEnv()
@@ -156,6 +160,86 @@ func main() {
 		),
 	))
 
+	// Rule endpoints - require Signature Admin role
+	mux.Handle("/v1/rules/evaluate", middleware.MockAuthMiddleware(nil)(
+		http.HandlerFunc(ruleHandler.EvaluateRules),
+	))
+
+	mux.Handle("/v1/rules", middleware.MockAuthMiddleware(nil)(
+		middleware.RequireRole(models.RoleSignatureAdmin)(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodPost {
+					ruleHandler.CreateRule(w, r)
+				} else if r.Method == http.MethodGet {
+					ruleHandler.ListRules(w, r)
+				} else {
+					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				}
+			}),
+		),
+	))
+
+	mux.Handle("/v1/rules/", middleware.MockAuthMiddleware(nil)(
+		middleware.RequireRole(models.RoleSignatureAdmin)(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/v1/rules/evaluate" {
+					http.NotFound(w, r)
+					return
+				}
+				if !strings.HasPrefix(r.URL.Path, "/v1/rules/") {
+					http.NotFound(w, r)
+					return
+				}
+				switch r.Method {
+				case http.MethodGet:
+					ruleHandler.GetRule(w, r)
+				case http.MethodPut:
+					ruleHandler.UpdateRule(w, r)
+				case http.MethodDelete:
+					ruleHandler.DeleteRule(w, r)
+				default:
+					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				}
+			}),
+		),
+	))
+
+	// Schedule endpoints - require Signature Admin role
+	mux.Handle("/v1/schedules", middleware.MockAuthMiddleware(nil)(
+		middleware.RequireRole(models.RoleSignatureAdmin)(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodPost {
+					scheduleHandler.CreateSchedule(w, r)
+				} else if r.Method == http.MethodGet {
+					scheduleHandler.ListSchedules(w, r)
+				} else {
+					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				}
+			}),
+		),
+	))
+
+	mux.Handle("/v1/schedules/", middleware.MockAuthMiddleware(nil)(
+		middleware.RequireRole(models.RoleSignatureAdmin)(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if !strings.HasPrefix(r.URL.Path, "/v1/schedules/") {
+					http.NotFound(w, r)
+					return
+				}
+				switch r.Method {
+				case http.MethodGet:
+					scheduleHandler.GetSchedule(w, r)
+				case http.MethodPut:
+					scheduleHandler.UpdateSchedule(w, r)
+				case http.MethodDelete:
+					scheduleHandler.DeleteSchedule(w, r)
+				default:
+					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				}
+			}),
+		),
+	))
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -164,5 +248,6 @@ func main() {
 	log.Printf("OpenSig API listening on %s", addr)
 	log.Printf("RBAC roles: org_admin, signature_admin, approver, auditor")
 	log.Printf("Use X-User-ID and X-User-Role headers for testing RBAC")
+	log.Printf("New endpoints: /v1/rules, /v1/schedules, /v1/rules/evaluate")
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
