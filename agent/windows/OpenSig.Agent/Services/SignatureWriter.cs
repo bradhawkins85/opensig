@@ -87,10 +87,67 @@ namespace OpenSig.Agent.Services
             string txtPath = Path.Combine(_signaturesDirectory, $"{safeName}.txt");
             File.WriteAllText(txtPath, template.TextContent, Encoding.UTF8);
             Logger.Log($"Wrote TXT signature: {txtPath}");
+
+            // Write assets to the _files directory (Outlook convention)
+            WriteAssets(template, safeName);
+        }
+
+        private void WriteAssets(RenderedTemplate template, string safeName)
+        {
+            if (template.Assets == null || template.Assets.Count == 0)
+            {
+                return;
+            }
+
+            // Create the assets directory following Outlook's convention: {SignatureName}_files/
+            string assetsDirectory = Path.Combine(_signaturesDirectory, $"{safeName}_files");
+            Directory.CreateDirectory(assetsDirectory);
+
+            Logger.Log($"Writing {template.Assets.Count} asset(s) to {assetsDirectory}");
+
+            foreach (var asset in template.Assets)
+            {
+                WriteAsset(assetsDirectory, asset);
+            }
+        }
+
+        private void WriteAsset(string assetsDirectory, TemplateAsset asset)
+        {
+            try
+            {
+                // Sanitize filename to prevent path traversal
+                string safeFilename = SanitizeFilename(Path.GetFileName(asset.Filename));
+                if (string.IsNullOrEmpty(safeFilename))
+                {
+                    Logger.LogWarning($"Skipping asset with invalid filename: {asset.Filename}");
+                    return;
+                }
+
+                string assetPath = Path.Combine(assetsDirectory, safeFilename);
+
+                // Decode base64 data and write to file
+                byte[] assetData = Convert.FromBase64String(asset.Data);
+                File.WriteAllBytes(assetPath, assetData);
+
+                Logger.Log($"Wrote asset: {assetPath} ({asset.ContentType}, {assetData.Length} bytes)");
+            }
+            catch (FormatException ex)
+            {
+                Logger.LogWarning($"Failed to decode asset '{asset.Filename}': Invalid base64 data - {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Failed to write asset '{asset.Filename}': {ex.Message}");
+            }
         }
 
         private string SanitizeFilename(string filename)
         {
+            if (string.IsNullOrEmpty(filename))
+            {
+                return string.Empty;
+            }
+
             // Remove invalid filename characters
             foreach (char c in Path.GetInvalidFileNameChars())
             {

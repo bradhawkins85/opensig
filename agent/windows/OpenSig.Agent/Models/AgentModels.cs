@@ -35,5 +35,23 @@ namespace OpenSig.Agent.Models
 
         [JsonPropertyName("text_content")]
         public string TextContent { get; set; } = string.Empty;
+
+        [JsonPropertyName("assets")]
+        public List<TemplateAsset>? Assets { get; set; }
+    }
+
+    /// <summary>
+    /// Represents an asset file associated with a template (e.g., logo, image)
+    /// </summary>
+    public class TemplateAsset
+    {
+        [JsonPropertyName("filename")]
+        public string Filename { get; set; } = string.Empty;
+
+        [JsonPropertyName("content_type")]
+        public string ContentType { get; set; } = string.Empty;
+
+        [JsonPropertyName("data")]
+        public string Data { get; set; } = string.Empty;
     }
 }
