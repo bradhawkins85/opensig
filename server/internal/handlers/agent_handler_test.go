@@ -172,6 +172,72 @@ func TestAgentHandler_GetTemplates_SetDefaultSignaturesEnabled(t *testing.T) {
 	}
 }
 
+func TestAgentHandler_GetTemplates_WithAssets(t *testing.T) {
+	// Create mock template with assets
+	mockTemplate := &models.Template{
+		ID:          "test-123",
+		TenantID:    "default",
+		Name:        "Template With Assets",
+		HTMLContent: "<div><img src=\"logo.png\">{{name}}</div>",
+		RTFContent:  "{\\rtf1\\ansi {{name}}}",
+		TextContent: "{{name}}",
+		Active:      true,
+		Assets: []models.TemplateAsset{
+			{
+				Filename:    "logo.png",
+				ContentType: "image/png",
+				Data:        "iVBORw0KGgo=", // Minimal base64 data for testing
+			},
+			{
+				Filename:    "banner.jpg",
+				ContentType: "image/jpeg",
+				Data:        "/9j/4AAQSkZJ", // Minimal base64 data for testing
+			},
+		},
+	}
+
+	store := &mockTemplateStore{
+		templates: []*models.Template{mockTemplate},
+	}
+	handler := NewAgentHandler(store)
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/agent/templates", nil)
+	rr := httptest.NewRecorder()
+
+	handler.GetTemplates(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, rr.Code)
+	}
+
+	var response models.AgentTemplateResponse
+	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	if len(response.Templates) != 1 {
+		t.Fatalf("Expected 1 template, got %d", len(response.Templates))
+	}
+
+	template := response.Templates[0]
+	if len(template.Assets) != 2 {
+		t.Errorf("Expected 2 assets, got %d", len(template.Assets))
+	}
+
+	// Verify first asset
+	if template.Assets[0].Filename != "logo.png" {
+		t.Errorf("Expected first asset filename 'logo.png', got %s", template.Assets[0].Filename)
+	}
+	if template.Assets[0].ContentType != "image/png" {
+		t.Errorf("Expected first asset content type 'image/png', got %s", template.Assets[0].ContentType)
+	}
+
+	// Verify second asset
+	if template.Assets[1].Filename != "banner.jpg" {
+		t.Errorf("Expected second asset filename 'banner.jpg', got %s", template.Assets[1].Filename)
+	}
+}
+
 type mockError struct {
 	msg string
 }

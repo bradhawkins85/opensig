@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using OpenSig.Agent.Models;
@@ -87,10 +88,112 @@ namespace OpenSig.Agent.Services
             string txtPath = Path.Combine(_signaturesDirectory, $"{safeName}.txt");
             File.WriteAllText(txtPath, template.TextContent, Encoding.UTF8);
             Logger.Log($"Wrote TXT signature: {txtPath}");
+
+            // Write assets to the _files directory (Outlook convention)
+            WriteAssets(template, safeName);
+        }
+
+        private void WriteAssets(RenderedTemplate template, string safeName)
+        {
+            if (template.Assets == null || template.Assets.Count == 0)
+            {
+                return;
+            }
+
+            // Create the assets directory following Outlook's convention: {SignatureName}_files/
+            string assetsDirectory = Path.Combine(_signaturesDirectory, $"{safeName}_files");
+            Directory.CreateDirectory(assetsDirectory);
+
+            Logger.Log($"Writing {template.Assets.Count} asset(s) to {assetsDirectory}");
+
+            foreach (var asset in template.Assets)
+            {
+                WriteAsset(assetsDirectory, asset);
+            }
+        }
+
+        // Maximum asset file size (10 MB) to prevent memory exhaustion
+        private const int MaxAssetSizeBytes = 10 * 1024 * 1024;
+        
+        // Allowed image extensions for signature assets
+        private static readonly HashSet<string> AllowedAssetExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".webp"
+        };
+
+        private void WriteAsset(string assetsDirectory, TemplateAsset asset)
+        {
+            try
+            {
+                // Validate the base64 data size before decoding to prevent memory exhaustion
+                // Base64 encoding increases size by approximately 4/3, so calculate approximate decoded size
+                if (asset.Data.Length > MaxAssetSizeBytes * 4 / 3)
+                {
+                    Logger.LogWarning($"Skipping asset '{asset.Filename}': Exceeds maximum allowed size of {MaxAssetSizeBytes / 1024 / 1024} MB");
+                    return;
+                }
+
+                // Extract just the filename, removing any path components
+                string rawFilename = Path.GetFileName(asset.Filename);
+                
+                // Validate file extension is an allowed image type
+                string extension = Path.GetExtension(rawFilename);
+                if (string.IsNullOrEmpty(extension) || !AllowedAssetExtensions.Contains(extension))
+                {
+                    Logger.LogWarning($"Skipping asset '{asset.Filename}': Extension '{extension}' is not an allowed image type");
+                    return;
+                }
+
+                // Sanitize filename to prevent path traversal
+                string safeFilename = SanitizeFilename(rawFilename);
+                if (string.IsNullOrEmpty(safeFilename))
+                {
+                    Logger.LogWarning($"Skipping asset with invalid filename: {asset.Filename}");
+                    return;
+                }
+
+                // Additional path traversal protection: verify the final path is within the assets directory
+                string assetPath = Path.Combine(assetsDirectory, safeFilename);
+                string fullAssetPath = Path.GetFullPath(assetPath);
+                string fullAssetsDirectory = Path.GetFullPath(assetsDirectory);
+                
+                if (!fullAssetPath.StartsWith(fullAssetsDirectory, StringComparison.OrdinalIgnoreCase))
+                {
+                    Logger.LogWarning($"Skipping asset '{asset.Filename}': Path traversal attempt detected");
+                    return;
+                }
+
+                // Decode base64 data and write to file
+                byte[] assetData = Convert.FromBase64String(asset.Data);
+                
+                // Validate decoded size as an additional check
+                if (assetData.Length > MaxAssetSizeBytes)
+                {
+                    Logger.LogWarning($"Skipping asset '{asset.Filename}': Decoded size exceeds maximum allowed size of {MaxAssetSizeBytes / 1024 / 1024} MB");
+                    return;
+                }
+
+                File.WriteAllBytes(assetPath, assetData);
+
+                Logger.Log($"Wrote asset: {assetPath} ({asset.ContentType}, {assetData.Length} bytes)");
+            }
+            catch (FormatException ex)
+            {
+                Logger.LogWarning($"Failed to decode asset '{asset.Filename}': Invalid base64 data - {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Failed to write asset '{asset.Filename}': {ex.Message}");
+            }
         }
 
         private string SanitizeFilename(string filename)
         {
+            if (string.IsNullOrEmpty(filename))
+            {
+                return string.Empty;
+            }
+
             // Remove invalid filename characters
             foreach (char c in Path.GetInvalidFileNameChars())
             {

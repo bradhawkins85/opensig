@@ -82,6 +82,7 @@ func (h *AgentHandler) GetTemplates(w http.ResponseWriter, r *http.Request) {
 			HTMLContent: renderer.Render(template.HTMLContent, userData),
 			RTFContent:  renderer.Render(template.RTFContent, userData),
 			TextContent: renderer.Render(template.TextContent, userData),
+			Assets:      template.Assets,
 		})
 	}
 
